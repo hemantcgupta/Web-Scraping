@@ -160,7 +160,7 @@ DaysAga, Job_Applicants from JobSearch
 
 select * from Companies
 
-select Compnay_Name, Job_Title, substring(Experince_Level, 1, 1) as Mini_Experince,
+select Compnay_Name, Job_Title, Job_Link, substring(Experince_Level, 1, 1) as Mini_Experince,
 DaysAga, Job_Applicants from Cmp_Jobs
-where DaysAga < 5 and Job_Applicants <100 and substring(Experince_Level, 1, 1) <=1
+where DaysAga < 5  and substring(Experince_Level, 1, 1) <=1 and Job_Applicants <100
 
