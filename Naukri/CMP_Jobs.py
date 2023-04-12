@@ -78,9 +78,23 @@ def JobApplicants(title_href):
         return int(job_applicants)
     except:
         return 10000
+   
+def KMB(rev):
+    if 'k' in rev.lower(): 
+        return int(float(rev[:-1])*1000)
+    elif 'm' in rev.lower():
+        return int(float(rev[:-1])*1000000)
+    elif 'b' in rev.lower():
+        return int(float(rev[:-1])*1000000000)
+    else:
+        return int(rev)
     
 def MainDataFetch(job_tuple, url):
     dct = dict()
+    try:
+        Reviews = re.search(r'\d+(\.\d+)?.', job_tuple.find('a', {'data-test': 'tupleAmbReviewCount'}).text).group()
+    except:
+        Reviews = 0
     # Job_Id
     job_id = job_tuple['data-job-id']
     # Job title and Job Link
@@ -93,7 +107,10 @@ def MainDataFetch(job_tuple, url):
     companyInfo_href = companyInfo['href']
     Job_Applicants = JobApplicants(title_href)
     # Required Experince
-    experience = job_tuple.find('span', {'data-test': 'experience'}).text
+    try:
+        experience = job_tuple.find('span', {'data-test': 'experience'}).text
+    except:
+        experience = 1000
     # Offered Salary
     salary = job_tuple.find('span', {'data-test': 'salary'}).text
     # Job Location
@@ -111,6 +128,7 @@ def MainDataFetch(job_tuple, url):
     dct['Compnay_Name'] = companyInfo_text
     dct['Coompany_Link'] = companyInfo_href
     dct['Cmp_Link'] = url
+    dct['Reviews'] = KMB(Reviews)
     dct['Experince_Level'] = experience
     dct['Offered_Salary'] = salary
     dct['Job_Location'] = Location
@@ -120,7 +138,8 @@ def MainDataFetch(job_tuple, url):
 # =============================================================================
 # URLS Continers
 # =============================================================================
-df_sql = pd.read_sql('''select * from Companies''', cnxn())
+def all_or_dreams(select):
+    return pd.read_sql('''select * from {}'''.format(select), cnxn())
 # =============================================================================
 # Setting selenium and fetch the body then convert htmlsparser and fetch jub_tuples
 # =============================================================================
@@ -137,18 +156,21 @@ def CMP_JOBS(url):
     # df_lst['PostDate'] = (datetime.today() - pd.to_timedelta(df_lst['DaysAga'], unit='d')).dt.date
     return df_lst
 
-Final_df = pd.concat([CMP_JOBS(url) for url in tqdm(df_sql['Cmp_Link'])]).reset_index(drop=True)
-Final_df['DaysAga'] = Final_df['Job_PostTime'].str.extract('(\d+)').replace(np.nan, 0).astype(int)
-Final_df['PostDate'] = (datetime.today() - pd.to_timedelta(Final_df['DaysAga'], unit='d')).dt.date
-
+def DreamsORall(DA):
+    df_sql = all_or_dreams(DA) # DreamsCMP OR Companies
+    Final_df = pd.concat([CMP_JOBS(url) for url in tqdm(df_sql['Cmp_Link'])]).reset_index(drop=True)
+    Final_df['DaysAga'] = Final_df['Job_PostTime'].str.extract('(\d+)').replace(np.nan, 0).astype(int)
+    Final_df['PostDate'] = (datetime.today() - pd.to_timedelta(Final_df['DaysAga'], unit='d')).dt.date
+    return Final_df
 
 def checkduplicates(df_lst):
     df_sql = pd.read_sql('''select * from Cmp_Jobs''', cnxn())
+    df_sql.drop_duplicates(subset=['Job_Id'], inplace=True)
     df_sql = df_sql[~df_sql['Job_Id'].isin(df_lst['Job_Id'])]
     return pd.concat([df_sql, df_lst])
 
-Data_Inserting_Into_DB(checkduplicates(Final_df), 'Cmp_Jobs')
-
+Data_Inserting_Into_DB(checkduplicates(DreamsORall('Companies')), 'Cmp_Jobs') 
+Data_Inserting_Into_DB(DreamsORall('DreamsJobs'), 'DreamsJobs')
 
 
 # =============================================================================
@@ -160,7 +182,17 @@ DaysAga, Job_Applicants from JobSearch
 
 select * from Companies
 
-select Compnay_Name, Job_Title, Job_Link, substring(Experince_Level, 1, 1) as Mini_Experince,
+select Compnay_Name, Job_Title, Job_Link, 
+substring(Experince_Level, 1, 1) as Mini_Experince,
 DaysAga, Job_Applicants from Cmp_Jobs
-where DaysAga < 5  and substring(Experince_Level, 1, 1) <=1 and Job_Applicants <100
+where DaysAga < 5  and substring(Experince_Level, 1, 1) <=1 
+and Job_Applicants <100
 
+select * from DreamsCMP 
+select * from Dreamsjobs 
+
+select Compnay_Name, Job_Title, Job_Link, 
+substring(Experince_Level, 1, 1) as Mini_Experince,
+DaysAga, Job_Applicants from  Dreamsjobs 
+where DaysAga < 5  and substring(Experince_Level, 1, 1) <=1 
+and Job_Applicants <100
