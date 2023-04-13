@@ -170,7 +170,7 @@ def checkduplicates(df_lst):
     return pd.concat([df_sql, df_lst])
 
 Data_Inserting_Into_DB(checkduplicates(DreamsORall('Companies')), 'Cmp_Jobs') 
-Data_Inserting_Into_DB(DreamsORall('DreamsJobs'), 'DreamsJobs')
+Data_Inserting_Into_DB(DreamsORall('DreamsCMP'), 'DreamsJobs')
 
 
 # =============================================================================
