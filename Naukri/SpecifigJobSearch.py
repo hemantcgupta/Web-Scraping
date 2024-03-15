@@ -36,6 +36,7 @@ options.add_argument('--disable-javascript')
 # =============================================================================
 url = "https://www.naukri.com/python-machine-learning-jobs-in-navi-mumbai?k=python%2C%20machine%20learning&l=navi%20mumbai%2C%20mumbai&experience=2&nignbevent_src=jobsearchDeskGNB"
 # https://www.naukri.com/python-machine-learning-jobs?k=python%2C%20machine%20learning&experience=0&nignbevent_src=jobsearchDeskGNB
+url = 'https://www.naukri.com/python-machine-learning-data-analyst-data-science-jobs-in-navi-mumbai?k=python%2C%20machine%20learning%2C%20data%20analyst%2C%20data%20science&l=navi%20mumbai&experience=1&nignbevent_src=jobsearchDeskGNB'
 # =============================================================================
 # Setting selenium and fetch the body then convert htmlsparser and fetch jub_tuples
 # =============================================================================
@@ -98,7 +99,6 @@ def MainDataFetch(job_tuple):
 df_lst = pd.DataFrame([MainDataFetch(job_tuple) for job_tuple in job_tuples])
 df_lst['DaysAga'] = df_lst['Job_PostTime'].str.extract('(\d+)').replace(np.nan, 0).astype(int)
 df_lst['PostDate'] = (datetime.today() - pd.to_timedelta(df_lst['DaysAga'], unit='d')).dt.date
-
 # =============================================================================
 # Instert data Into Database
 # =============================================================================
@@ -126,12 +126,11 @@ def Data_Inserting_Into_DB(df, Table_Name):
     start = time.time()
     df.to_sql(Table_Name, engine, if_exists = 'replace', index=False)
 
-def checkduplicates(df_lst):
-    df_sql = pd.read_sql('''select * from JobSearch''', cnxn())
+def checkduplicates(df_lst, tb):
+    df_sql = pd.read_sql('''select * from {}'''.format(tb), cnxn())
     df_sql = df_sql[~df_sql['Job_Id'].isin(df_lst['Job_Id'])]
     return pd.concat([df_sql, df_lst])
-    
-Data_Inserting_Into_DB(checkduplicates(df_lst), 'JobSearch')
 
-
+Data_Inserting_Into_DB(checkduplicates(df_lst, 'JobSearch'), 'JobSearch')
+Data_Inserting_Into_DB(checkduplicates(df_lst, 'JobNearMe'), 'JobNearMe')
 

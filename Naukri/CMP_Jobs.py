@@ -128,7 +128,10 @@ def MainDataFetch(job_tuple, url):
     dct['Compnay_Name'] = companyInfo_text
     dct['Coompany_Link'] = companyInfo_href
     dct['Cmp_Link'] = url
-    dct['Reviews'] = KMB(Reviews)
+    try: 
+        dct['Reviews'] = KMB(Reviews)
+    except:
+        dct['Reviews'] = 0
     dct['Experince_Level'] = experience
     dct['Offered_Salary'] = salary
     dct['Job_Location'] = Location
